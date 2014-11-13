@@ -40,6 +40,8 @@ int deveDesviar (Position pos, Grid *grid, Robot *r)
 			if (valid (andar_pos, grid->m, grid->n) && (grid->map[andar_pos.x][andar_pos.y].type == NONE))
 				if ((proj->dir + 3)%6 == i && r->dir != i && r->dir != (i + 3)%6)
 					return 1;
+				else
+					return -2;
 			else
 				return -1;
 		}
