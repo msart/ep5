@@ -34,7 +34,7 @@ int deveDesviar (Position pos, Grid *grid, Robot *r)
 	{
 		if (adjacentes[i] == 3)
 		{
-			proj_pos = 	getNeighbor (pos, i);
+			proj_pos = getNeighbor (pos, i);
 			proj = &grid->map[proj_pos.x][proj_pos.y].object.projectile;
 			andar_pos = getNeighbor (pos, r->dir);
 			if (valid (andar_pos, grid->m, grid->n) && (grid->map[andar_pos.x][andar_pos.y].type == NONE))
@@ -48,6 +48,34 @@ int deveDesviar (Position pos, Grid *grid, Robot *r)
 	}
 	return 0;
 }
+
+
+
+action Desviar(Position pos, Grid *grid, Robot *r){
+	int deve;
+	Position p, proj_pos;
+	Projectile *proj;
+	deve=deveDesviar (pos, grid, r);
+	if(deve==1)
+		return WALK;
+	else if(deve==-1){
+		p=getNeighbor (pos, (r->dir+1)%6);
+		if(valid (p, grid->m, grid->n) && (grid->map[p.x][p.y].type == NONE))
+			return TURN_RIGHT;
+		else
+			return TURN_LEFT;/*vai virar pra esquerda caso a posição da esquerda seja vazia, ou nem a da direita ou da esquerda seja vazia, ai ele vai ter q da uma volta*/
+	}
+	else{/*sobrou só o caso -2*/
+		for (i = 0; i < 6; i++){
+			if (adjacentes[i] == 3){
+				proj_pos = getNeighbor (pos, i);
+				proj = &grid->map[proj_pos.x][proj_pos.y].object.projectile;
+				if ((proj->dir + 3)%6 == i){
+					if (r->dir == i) return SHOOT_CENTER;
+					if (r->dir == (i + 3)%6) return OBSTACLE_CENTER;
+				}
+}
+
 
 /*Action desviar (Position pos, Grid *grid, Robot *r)
 {
