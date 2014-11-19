@@ -1,11 +1,10 @@
 #include "../robot_fight.h"
 
 static int adjacentes[6];
-static int control_dir;
-/* Vida do robo */
+
 typedef enum {SAUDAVEL, RISCO} vidaRobo;
 
-/* Esta funcao retorna o estado atual da vida do robo - ALTA, MEDIA ou BAIXA */
+/* Esta funcao retorna o estado atual da vida do robo - SAUDAVEL E RISCO */
 vidaRobo vidaAtual(Grid *g, Position p) 
 {
 	int hpAtual;
@@ -15,20 +14,18 @@ vidaRobo vidaAtual(Grid *g, Position p)
 	return (RISCO);
 }
 
-/***************************************/
-/* BLOCO COPIADO DE controller_basic.c */
-/***************************************/
-
 /*Checa se a posicao dada esta dentro do mapa*/
 int limiteDoMapa (Position pos, int m, int n)
 {
 	return ((pos.x >= 0 && pos.x < m) && (pos.y >= 0 && pos.y < n));
 }
 
+/*Checa se a posicao dada esta vazia e esta dentro do mapa*/
 int valid (Position p, int m, int n, Grid *g) {
 	return ((p.x >= 0 && p.x < m && p.y >= 0 && p.y < n) && (g->map[p.x][p.y].type == NONE));
 }
 
+/* preenche o vetor das posicoes ao redor do robo */
 void encontrarAdjacentes (Position pos, Grid *grid)
 {
 	int i;
@@ -62,6 +59,7 @@ Action fastTurn(int ini, int end) {
 		return TURN_LEFT;		
 }
 
+/* checa se a posicao p contem um robo */
 int isRobot (Grid *g, Position p) {
 	if (g->map[p.x][p.y].type == ROBOT)
 		return 1;
@@ -97,6 +95,7 @@ int searchNearestRobot (Grid *g, Position p, Robot *r) {
 	else
 		return best_dir;
 }
+
 /*atira no inimigo se ele estiver na frente, ou vira se ele não estiver*/
 Action atiraNoInimigo (Grid *g, Position p, Robot *r)
 {
@@ -113,14 +112,18 @@ Action atiraNoInimigo (Grid *g, Position p, Robot *r)
 		return SHOOT_RIGHT;
 	return fastTurn (r->dir, inimigo_dir);
 }
+
+/* as 2 funcoes seguintes foram retiradas de controller_basic.c */
 int isControlPoint(Grid *g, Position p) {
 	return (g->map[p.x][p.y].isControlPoint);	
 }
+
 /*Dado uma posicao, checa se para alguma direcao
 existe um control point, e retorna qual direcao esta
 o mais perto, contando giradas necessárias*/
 int searchNearestControl(Grid *g, Position p, Robot *r) {
 	int i, min = 500, best_dir = 0, cont;
+
 	for(i = 0; i < 6; i++) {
 		/*Conta para chegar o numero de viradas necessarias
 		ja que elas gastam um turno*/
@@ -146,19 +149,24 @@ int searchNearestControl(Grid *g, Position p, Robot *r) {
 	else
 		return best_dir;
 }
-
+/* coloca um bloco na direção do inimigo mais proximo */
 Action porBloco (Position pos, Grid *grid, Robot *r) {
 	Direction inimigo_dir;
-
+	Position inimigo; /*posicao adjacente ao robo na direcao do nimigo mais proximo*/
+	
 	inimigo_dir = searchNearestRobot (grid, pos, r);
 	if (inimigo_dir == -1 || r->obstacles == 0)
 		return STAND;
-	if (inimigo_dir == (r->dir + 3)%6)
-		return OBSTACLE_CENTER;
-	if (inimigo_dir == (r->dir + 2)%6)
-		return OBSTACLE_RIGHT;
-	if (inimigo_dir == (r->dir + 4)%6)
-		return OBSTACLE_LEFT;
+	
+	inimigo = getNeighbor (pos, inimigo_dir);
+	if (grid->map[inimigo.x][inimigo.y].type == 0 || grid->map[inimigo.x][inimigo.y].type == 2) {
+		if (inimigo_dir == (r->dir + 3)%6)
+			return OBSTACLE_CENTER;
+		if (inimigo_dir == (r->dir + 2)%6)
+			return OBSTACLE_RIGHT;
+		if (inimigo_dir == (r->dir + 4)%6)
+			return OBSTACLE_LEFT;
+	}
 	return fastTurn (r->dir, (inimigo_dir + 3)%6);
 }
 
@@ -191,6 +199,7 @@ Action Desviar(Position pos, Grid *grid, Robot *r){
 	int deve, i;
 	Position p, proj_pos;
 	Projectile *proj;
+
 	deve = deveDesviar (pos, grid, r);
 	printf ("Deve Desviar (%d)\n", deve);
 	if (isControlPoint (grid, pos)) {
@@ -232,10 +241,10 @@ Action Desviar(Position pos, Grid *grid, Robot *r){
 	}
 	return STAND;	
 }
-/**************************************************/
+
 /* Retorna a acao a ser realizada quando a vida do robo eh baixa */
 Action acaoSaudavel (Grid *g, Position p) {
-	int i, j;
+	int i, j, control_dir;
 	Position s;
 	Robot *r = &g->map[p.x][p.y].object.robot;
 	
@@ -276,7 +285,7 @@ Action acaoSaudavel (Grid *g, Position p) {
 }
 
 Action acaoRisco (Grid *g, Position p) {
-	int i, j;
+	int i, j, control_dir;
 	Position s;
 	Robot *r = &g->map[p.x][p.y].object.robot;
 	
