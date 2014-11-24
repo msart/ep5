@@ -1,12 +1,11 @@
 #include "../robot_fight.h"
 
 static int adjacentes[6];
-int vida_passada = 100, vida_atual = 100;
 
 typedef enum {SAUDAVEL, RISCO} vidaRobo;
 
 /* Esta funcao retorna o estado atual da vida do robo - SAUDAVEL E RISCO */
-vidaRobo vidaAtual(Grid *g, Position p) 
+vidaRobo vidaAtual (Grid *g, Position p) 
 {
 	int hpAtual;
 	hpAtual = g->map[p.x][p.y].object.robot.hp;
@@ -27,7 +26,7 @@ int valid (Position p, int m, int n, Grid *g) {
 }
 
 /* Verifica se exite algum inimigo nas posicoes adjacentes ao robo */
-int inimigoAdjacente(Position pos, Grid *grid, Robot *r)
+int inimigoAdjacente (Position pos, Grid *grid, Robot *r)
 {
 	int i;
 	Position rob_pos;
@@ -61,7 +60,7 @@ void encontrarAdjacentes (Position pos, Grid *grid)
 
 /*Dada uma direcao inicial e uma direcao final, ve qual
 o menor numero de viradas sao necessarias*/
-int quickTurn(int ini, int end) {
+int quickTurn (int ini, int end) {
 	int i, j;
 	for(i = ini, j = 0; i != end; i = (i+1)%6, j++)
 		if (i >= 6) i-= 6;
@@ -71,7 +70,7 @@ int quickTurn(int ini, int end) {
 
 /*Dada uma direcao inicial e uma direcao final, ve
 para qual lado virando eh mais rapido de se chegar*/
-Action fastTurn(int ini, int end) {
+Action fastTurn (int ini, int end) {
 	int dif = end-ini;
 	if((dif <= 3 && dif >= 0) || (dif <= -3))
 		return TURN_RIGHT;
@@ -134,23 +133,23 @@ Action atiraNoInimigo (Grid *g, Position p, Robot *r)
 }
 
 /* as 2 funcoes seguintes foram retiradas de controller_basic.c */
-int isControlPoint(Grid *g, Position p) {
+int isControlPoint (Grid *g, Position p) {
 	return (g->map[p.x][p.y].isControlPoint);	
 }
 
 /*Dado uma posicao, checa se para alguma direcao
 existe um control point, e retorna qual direcao esta
 o mais perto, contando giradas necessárias*/
-int searchNearestControl(Grid *g, Position p, Robot *r) {
+int searchNearestControl (Grid *g, Position p, Robot *r) {
 	int i, min = 500, best_dir = 0, cont;
 
 	for(i = 0; i < 6; i++) {
 		/*Conta para chegar o numero de viradas necessarias
 		ja que elas gastam um turno*/
-		cont = 1 + quickTurn(r->dir, i);
-		Position s = getNeighbor(p,i);
-		while(valid(s, g->m, g->n, g)) {
-			if(isControlPoint(g,s)) {
+		cont = 1 + quickTurn (r->dir, i);
+		Position s = getNeighbor (p,i);
+		while(valid (s, g->m, g->n, g)) {
+			if(isControlPoint (g,s)) {
 				if(cont < min) {
 					min = cont;
 					best_dir = i;
@@ -158,7 +157,7 @@ int searchNearestControl(Grid *g, Position p, Robot *r) {
 				}
 			}
 			cont++;
-			s = getNeighbor(s, i);
+			s = getNeighbor (s, i);
 		}
 	}
 
@@ -190,11 +189,6 @@ Action porBloco (Position pos, Grid *grid, Robot *r) {
 	return fastTurn (r->dir, (inimigo_dir + 3)%6);
 }
 
-int levouHit(Robot *r)
-{
-	return ((vida_atual - vida_passada) < 0);
-}
-
 /* checa se a posicao p contem um projectile */
 int isProjectile (Grid *g, Position p) {
 	if (g->map[p.x][p.y].type == PROJECTILE)
@@ -215,7 +209,7 @@ int searchNearestProjectile (Grid *g, Position p, Robot *r) {
 		cont = 1 + quickTurn (r->dir, i);
 		s = getNeighbor (p, i);
 		while (limiteDoMapa (s, g->m, g->n)) {
-			if (isProjectile(g, s)) {
+			if (isProjectile (g, s)) {
 				if(cont < min) {
 					min = cont;
 					best_dir = i;
@@ -245,19 +239,21 @@ int deveDesviar (Position pos, Grid *grid, Robot *r)
 			proj_pos = 	getNeighbor (pos, i);
 			proj = &grid->map[proj_pos.x][proj_pos.y].object.projectile;
 			andar_pos = getNeighbor (pos, r->dir);
-			if (valid (andar_pos, grid->m, grid->n, grid))
-				if ((proj->dir + 3)%6 == i && r->dir != i && r->dir != (i + 3)%6)
-					return 1; /*pode desviar reto*/
-				else 
-					return -2; /*ou atira para destruir o tiro, ou põe bloco*/
-			else
-				return -1; /*gira para o lado mais proximo para tentar fugir*/
+			if ((proj->dir + 3)%6 == i) {
+				if (valid (andar_pos, grid->m, grid->n, grid))
+					if (r->dir != i && r->dir != (i + 3)%6)
+						return 1; /*pode desviar reto*/
+					else 
+						return -2; /*ou atira para destruir o tiro, ou põe bloco*/
+				else
+					return -1; /*gira para o lado mais proximo para tentar fugir*/
+			}
 		}
 	}
 	return 0;
 }
 
-Action Desviar(Position pos, Grid *grid, Robot *r){
+Action Desviar (Position pos, Grid *grid, Robot *r){
 	int deve, i, dir_proj, dir_ini;
 	Position p, proj_pos;
 	Projectile *proj;
@@ -266,8 +262,8 @@ Action Desviar(Position pos, Grid *grid, Robot *r){
 
 	/*Se estivermos num ponto de controle e nao estivermos sendo atacados*/
 	if (isControlPoint (grid, pos)) {
-		dir_proj = searchNearestProjectile(grid, pos, r);
-		dir_ini = searchNearestRobot(grid, pos, r);
+		dir_proj = searchNearestProjectile (grid, pos, r);
+		dir_ini = searchNearestRobot (grid, pos, r);
 
 		/* Caso seja encontrado um projetil numa direcao valida e caso exista municao realizamos uma acao */
 		if (dir_ini != -1 && dir_proj != -1 && r->bullets > 0 )
@@ -283,7 +279,7 @@ Action Desviar(Position pos, Grid *grid, Robot *r){
 	}
 	else {
 		if(deve==1) return WALK;
-		else if(deve==-1){
+		else if(deve==-1) {
 			p=getNeighbor (pos, (r->dir+1)%6);
 			if(limiteDoMapa (p, grid->m, grid->n) && (grid->map[p.x][p.y].type == NONE)) return TURN_RIGHT;
 			else return TURN_LEFT;
@@ -312,13 +308,13 @@ Action acaoSaudavel (Grid *g, Position p) {
 	Robot *r = &g->map[p.x][p.y].object.robot;
 	
 	/*Se estiver em cima de um control point, SCORE TIME*/
-	if(isControlPoint(g,p) && !inimigoAdjacente(p, g, r)) {
+	if (isControlPoint (g, p) && !inimigoAdjacente (p, g, r)) {
 		if (deveDesviar (p, g, r)) return Desviar (p, g, r);
-		return atiraNoInimigo(g, p, r);
+		return atiraNoInimigo (g, p, r);
 	}
 	else {
 		/*procura algum control point em alguam direcao do robo*/
-		control_dir = searchNearestControl(g, p, r);
+		control_dir = searchNearestControl (g, p, r);
 		/*Caso em nenhuma direcao tem um control point livre
 		andar em uma direcao valida, ou comeca a virar para uma direcao valida*/
 		if (control_dir == -1) {
@@ -330,7 +326,7 @@ Action acaoSaudavel (Grid *g, Position p) {
 						return WALK;
 					}
 					else {
-						return fastTurn(r->dir, i);
+						return fastTurn (r->dir, i);
 					}
 				}
 			}
@@ -342,7 +338,7 @@ Action acaoSaudavel (Grid *g, Position p) {
 		else if(control_dir == r->dir)
 			return WALK;
 		else {
-			return fastTurn(r->dir, control_dir);
+			return fastTurn (r->dir, control_dir);
 		}
 	}
 }
@@ -353,7 +349,7 @@ Action acaoRisco (Grid *g, Position p) {
 	Robot *r = &g->map[p.x][p.y].object.robot;
 	
 	/*Se estiver em cima de um control point, SCORE TIME*/
-	if(isControlPoint(g,p) && !inimigoAdjacente(p, g, r)) {
+	if(isControlPoint (g,p) && !inimigoAdjacente (p, g, r)) {
 		if (deveDesviar (p, g, r)) return Desviar (p, g, r);
 		return porBloco (p, g, r);
 	}
@@ -365,13 +361,13 @@ Action acaoRisco (Grid *g, Position p) {
 		if (control_dir == -1) {
 			for(i = r->dir, j = 0; j < 6; i++,j++){
 				if (i >= 6) i-=6;
-				s = getNeighbor(p,i);
-				if(valid(s, g->m, g->n, g)) {
+				s = getNeighbor (p,i);
+				if(valid (s, g->m, g->n, g)) {
 					if(i == r->dir) {
 						return WALK;
 					}
 					else {
-						return fastTurn(r->dir, i);
+						return fastTurn (r->dir, i);
 					}
 				}
 			}
@@ -383,35 +379,27 @@ Action acaoRisco (Grid *g, Position p) {
 		else if(control_dir == r->dir)
 			return WALK;
 		else
-			return fastTurn(r->dir, control_dir);
+			return fastTurn (r->dir, control_dir);
 	}
 }
 
-void prepareGame(Grid *g, Position p, int turnCount) {
-	Robot *r = &g->map[p.x][p.y].object.robot;
-
-	if (turnCount%2 == 0)
-		vida_atual = r->hp;
-	else
-	{
-		vida_passada = vida_atual;
-		vida_atual = r->hp;
-	}
+void prepareGame (Grid *g, Position p, int turnCount) {
+	
 }
 
 
-Action processTurn(Grid *g, Position p, int turnsLeft) {
+Action processTurn (Grid *g, Position p, int turnsLeft) {
 	int estadoVida;
 
 	encontrarAdjacentes (p, g);
-	estadoVida = vidaAtual(g, p);
+	estadoVida = vidaAtual (g, p);
 	switch(estadoVida)
 	{
 		case SAUDAVEL:
-			return acaoSaudavel(g, p);
+			return acaoSaudavel (g, p);
 		break;
 		case RISCO:
-			return acaoRisco(g, p);
+			return acaoRisco (g, p);
 		break;
 	}
 	return STAND;
